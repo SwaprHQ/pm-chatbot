@@ -2,6 +2,8 @@ import { Message } from "ai/react";
 import { Chat } from "../../../components/chat";
 import { getMessagesByChatId } from "../../../lib/db/queries";
 
+export const runtime = "edge";
+
 export default async function ChatPage({
   params,
 }: {
