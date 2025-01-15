@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { useChat } from "ai/react";
-import { generateUUID } from "../lib/utils";
+import { useRouter } from "next/navigation";
 
 export const NewChat = () => {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [text, setText] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async () => {
     const response = await fetch("/api/chat", {
@@ -19,32 +19,16 @@ export const NewChat = () => {
       body: JSON.stringify({ message: text }),
     });
 
+    //updates chat list
+    router.refresh();
+
     if (response.ok) {
-      //should use useChat here
       const { chatId } = await response.json();
       redirect(`/chat/${chatId}`);
     } else {
       // Handle error
     }
   };
-
-  // const handleSubmit = async () => {
-  //   append({ role: "user", content: text });
-  //   redirect(`/chat/${id}`);
-  // };
-
-  // useEffect(() => {
-  //   if (!dataStream?.length) return;
-
-  //   const lastDataStream = dataStream[dataStream.length - 1] as {
-  //     type: "chat-id";
-  //     content: string;
-  //   };
-
-  //   if (lastDataStream.type === "chat-id") {
-  //     redirect(`/chat/${id}`);
-  //   }
-  // }, [dataStream]);
 
   if (status === "unauthenticated") return "Please sign in to chat";
 
@@ -56,6 +40,12 @@ export const NewChat = () => {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Type your message..."
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            handleSubmit();
+          }
+        }}
       />
       <button
         className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"

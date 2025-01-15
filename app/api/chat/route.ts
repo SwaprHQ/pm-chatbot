@@ -1,44 +1,9 @@
 import { NextResponse } from "next/server";
-import {
-  getChatById,
-  getMessageById,
-  getMessagesByChatId,
-  saveChat,
-  saveMessage,
-} from "../../../lib/db/queries";
-import { Message as ChatMessage } from "../../../lib/db/schema";
+import { getChatById, saveChat, saveMessage } from "../../../lib/db/queries";
 import { auth } from "../../auth";
-import {
-  convertToCoreMessages,
-  CoreMessage,
-  createDataStreamResponse,
-  generateText,
-  Message,
-  streamText,
-} from "ai";
+import { createDataStreamResponse, Message, streamText } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { Chat } from "../../../lib/db/schema";
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  const session = await auth();
-
-  if (!session || !session.user || !session.user.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-  if (!id) {
-    return new Response("No id", { status: 400 });
-  }
-  const messages = await getMessagesByChatId({ id });
-
-  if (!messages || messages.length === 0) {
-    return new Response("Messages not found", { status: 404 });
-  }
-
-  return NextResponse.json({ messages });
-}
 
 export async function POST(request: Request) {
   const { message }: { message: string } = await request.json();
@@ -48,11 +13,15 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const title =
+    message.length > 40 ? message.slice(0, 40).concat("...") : message;
+
   const saveChatResult = await saveChat({
     userId: session.user.id,
-    title: message,
+    title,
   });
   const chat = saveChatResult[0];
+
   await saveMessage({
     chatId: chat.id,
     message: message,

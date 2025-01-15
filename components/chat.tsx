@@ -2,16 +2,13 @@
 
 import { Message, useChat } from "ai/react";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { message } from "../lib/db/schema";
-import { getMessagesByChatId } from "../lib/db/queries";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 interface ChatProps {
   id: string;
   initialMessages: Message[];
 }
-
-//resolver probelma de mensagens sem id
 
 export const Chat = ({ id, initialMessages }: ChatProps) => {
   const { messages, setInput, input, isLoading, reload, handleSubmit } =
@@ -21,7 +18,6 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
         id,
       },
       fetch: (input, init) => {
-        console.log("fetching", init);
         return fetch(input, {
           ...init,
           method: "PUT",
@@ -34,7 +30,7 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
     if (initialMessages.length === 1) reload();
   }, []);
 
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   const submitForm = () => {
     handleSubmit();
@@ -43,8 +39,8 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
   if (status === "unauthenticated") return "Please sign in to chat";
 
   return (
-    <div className="flex flex-col">
-      <div className="flex-1 overflow-y-auto p-2 border border-gray-300 mt-20 mb-24">
+    <div className="flex flex-col h-screen px-4 pt-20 pb-8">
+      <div className="flex-1 overflow-y-auto p-2 h-full">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -53,8 +49,8 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
             <div
               className={`inline-block p-2 rounded-lg ${
                 message.role === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-black"
+                  ? "bg-blue-500 text-white max-w-[45%]"
+                  : "bg-gray-200 text-black max-w-[45%]"
               } my-1`}
             >
               {message.content}
@@ -62,12 +58,12 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
           </div>
         ))}
       </div>
-      <div className="flex p-2 border-t border-gray-300 fixed bottom-10 left-0 right-0 text-black">
+      <div className="flex p-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 p-2 rounded border border-gray-300"
+          className="flex-1 p-2 rounded border border-gray-300 text-black"
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -83,7 +79,7 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
           }}
         />
         <button
-          onClick={submitForm}
+          onClick={isLoading ? undefined : submitForm}
           className="ml-2 p-2 rounded bg-blue-500 text-white"
         >
           Send
