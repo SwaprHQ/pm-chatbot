@@ -2,7 +2,6 @@
 
 import { Message, useChat } from "ai/react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 interface ChatProps {
@@ -28,6 +27,7 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
 
   useEffect(() => {
     if (initialMessages.length === 1) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { status } = useSession();

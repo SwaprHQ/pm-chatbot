@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Provider } from "../components/providers";
-import { DataStreamHandler } from "../components/data-stream-handler";
 import ChatList from "../components/chat-list";
 import { Header } from "../components/header";
 

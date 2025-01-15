@@ -9,7 +9,7 @@ type DataStreamDelta = {
 };
 
 export function DataStreamHandler({ id }: { id: string }) {
-  const { data: dataStream, messages } = useChat({ id });
+  const { data: dataStream } = useChat({ id });
   const lastProcessedIndex = useRef(-1);
 
   useEffect(() => {

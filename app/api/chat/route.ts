@@ -82,7 +82,7 @@ export async function PUT(request: Request) {
                 role: "assistant",
               });
             } catch (error) {
-              console.error("Failed to save chat");
+              console.error("Failed to save chat:", error);
             }
           }
         },

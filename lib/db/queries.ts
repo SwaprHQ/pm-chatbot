@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { chat, Message, message, user, User } from "./schema";
+import { chat, message, user, User } from "./schema";
 import { asc, desc, eq } from "drizzle-orm";
 
 const client = postgres(process.env.POSTGRES_URL!, { prepare: false });

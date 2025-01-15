@@ -10,7 +10,7 @@ import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 // component that works on pages which support both client and server side
 // rendering, and avoids any flash incorrect content on initial page load.
 export function Header() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const { disconnect } = useDisconnect();
 
   const { signMessageAsync } = useSignMessage();
