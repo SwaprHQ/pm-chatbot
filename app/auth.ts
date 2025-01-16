@@ -26,9 +26,11 @@ const providers = [
         const csrfToken = req.headers
           .get("cookie")
           ?.split("; ")
-          .find((cookie) => cookie.startsWith("authjs.csrf-token="))
+          .find((cookie) => cookie.startsWith("__Host-authjs.csrf-token="))
           ?.split("=")[1]
           .split("%7C")[0];
+        console.log("cookie", req.headers.get("cookie"));
+        console.log("csrfToken", csrfToken);
 
         if (!csrfToken) {
           throw new Error("CSRF token not found");
