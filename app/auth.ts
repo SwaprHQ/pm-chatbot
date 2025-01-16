@@ -23,14 +23,17 @@ const providers = [
         const siwe = new SiweMessage(JSON.parse(credentials.message));
         const nextAuthUrl = new URL(process.env.NEXTAUTH_URL!);
 
-        const csrfToken = req.headers
-          .get("cookie")
-          ?.split("; ")
-          .find((cookie) => cookie.startsWith("__Host-authjs.csrf-token="))
-          ?.split("=")[1]
-          .split("%7C")[0];
-        console.log("cookie", req.headers.get("cookie"));
-        console.log("csrfToken", csrfToken);
+        const csrfResponse = await fetch(nextAuthUrl.href + "/api/auth/csrf", {
+          headers: req.headers,
+        });
+        const { csrfToken } = await csrfResponse.json();
+
+        // const csrfToken = req.headers
+        //   .get("cookie")
+        //   ?.split("; ")
+        //   .find((cookie) => cookie.startsWith("__Host-authjs.csrf-token="))
+        //   ?.split("=")[1]
+        //   .split("%7C")[0];
 
         if (!csrfToken) {
           throw new Error("CSRF token not found");
@@ -42,7 +45,9 @@ const providers = [
         });
 
         if (result.success) {
+          console.log("User signed in", siwe.address);
           const users = await getUser(siwe.address);
+          console.log("User signed in users", users);
           if (users.length !== 0) return users[0];
           await createUser(siwe.address);
           const newUser = await getUser(siwe.address);
