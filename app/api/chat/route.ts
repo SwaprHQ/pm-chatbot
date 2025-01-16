@@ -5,8 +5,6 @@ import { createDataStreamResponse, Message, streamText } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { Chat } from "../../../lib/db/schema";
 
-export const runtime = "edge";
-
 export async function POST(request: Request) {
   const { message }: { message: string } = await request.json();
   const session = await auth();
