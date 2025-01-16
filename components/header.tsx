@@ -3,6 +3,7 @@
 import { ConnectKitButton } from "connectkit";
 import { getCsrfToken, signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SiweMessage } from "siwe";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 
@@ -12,7 +13,7 @@ import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 export function Header() {
   const { data: session } = useSession();
   const { disconnect } = useDisconnect();
-
+  const router = useRouter();
   const { signMessageAsync } = useSignMessage();
   const { address, isConnected, chain } = useAccount();
 
@@ -31,12 +32,13 @@ export function Header() {
       const signature = await signMessageAsync({
         message: message.prepareMessage(),
       });
-      signIn("credentials", {
+      await signIn("credentials", {
         message: JSON.stringify(message),
         redirect: false,
         signature,
         callbackUrl,
       });
+      router.refresh();
     } catch (error) {
       window.alert(error);
     }
