@@ -30,9 +30,11 @@ export async function createUser(walletAddress: string) {
 export async function saveChat({
   userId,
   title,
+  marketAddress,
 }: {
   userId: string;
   title: string;
+  marketAddress?: string;
 }) {
   try {
     return await db
@@ -41,6 +43,7 @@ export async function saveChat({
         createdAt: new Date(),
         userId,
         title,
+        marketAddress,
       })
       .returning();
   } catch (error) {
@@ -78,7 +81,7 @@ export async function saveMessage({
   role = "user",
 }: {
   chatId: string;
-  message: string;
+  message: { response: string; news?: { url: string; title: string }[] };
   role: string;
 }) {
   try {
@@ -86,7 +89,7 @@ export async function saveMessage({
       .insert(message)
       .values({
         createdAt: new Date(),
-        content: JSON.stringify({ response: content }),
+        content: JSON.stringify(content),
         role,
         chatId,
       })

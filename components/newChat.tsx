@@ -11,7 +11,7 @@ export const NewChat = () => {
   const router = useRouter();
 
   const handleSubmit = async () => {
-    const response = await fetch("/api/chat", {
+    const response = await fetch("/api/market-chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
