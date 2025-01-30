@@ -3,6 +3,8 @@
 import { Message, useChat } from "ai/react";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
+import MarkdownRenderer from "./markdown-renderer";
+import Link from "next/link";
 
 interface ChatProps {
   id: string;
@@ -17,7 +19,7 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
         id,
       },
       fetch: (input, init) => {
-        return fetch(input, {
+        return fetch("/api/market-chat", {
           ...init,
           method: "PUT",
         });
@@ -37,26 +39,51 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
   };
 
   if (status === "unauthenticated") return "Please sign in to chat";
+  console.log(messages);
 
   return (
     <div className="flex flex-col h-screen px-4 pt-20 pb-8">
       <div className="flex-1 overflow-y-auto p-2 h-full">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={message.role === "user" ? "text-right" : "text-left"}
-          >
+        {messages.map((message, index) => {
+          const news = (
+            message.annotations?.[0] as {
+              news: { url: string; title: string }[];
+            }
+          )?.news;
+
+          return (
             <div
-              className={`inline-block p-2 rounded-lg ${
-                message.role === "user"
-                  ? "bg-blue-500 text-white max-w-[45%]"
-                  : "bg-gray-200 text-black max-w-[45%]"
-              } my-1`}
+              key={index}
+              className={message.role === "user" ? "text-right" : "text-left"}
             >
-              {message.content}
+              <MarkdownRenderer
+                className={`inline-block p-2 rounded-lg ${
+                  message.role === "user"
+                    ? "bg-blue-500 text-white max-w-[45%]"
+                    : "bg-gray-200 text-black max-w-[45%]"
+                } my-1`}
+                content={message.content}
+              />{" "}
+              {news && (
+                <div className="mt-4 space-y-2">
+                  <p className="font-bold">Related news</p>
+                  <div className="flex space-x-2">
+                    {news.map(({ title, url }, index) => (
+                      <Link
+                        href={url}
+                        key={index}
+                        className="block bg-gray-200 rounded-lg p-2 text-black underline text-md max-w-40"
+                        target="_blank"
+                      >
+                        {title}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="flex p-2">
         <input

@@ -22,6 +22,7 @@ export const chat = pgTable("Chat", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id),
+  marketAddress: varchar("marketAddress"),
 });
 
 export type Chat = InferSelectModel<typeof chat>;

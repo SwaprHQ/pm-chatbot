@@ -18,6 +18,12 @@ export default async function ChatPage({
       initialMessages={messages.map(({ content, role, id }) => {
         return {
           content: (content as { response: string }).response,
+          annotations: [
+            {
+              news: (content as { news: { url: string; title: string }[] })
+                .news,
+            },
+          ],
           role: role as Message["role"],
           id,
         };

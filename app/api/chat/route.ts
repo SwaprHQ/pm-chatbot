@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   await saveMessage({
     chatId: chat.id,
-    message: message,
+    message: { response: message },
     role: "user",
   });
 
@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
   if (userMessages.length > 1) {
     await saveMessage({
       chatId: chat.id,
-      message: lastUserMessage.content as string,
+      message: { response: lastUserMessage.content as string },
       role: "user",
     });
   }
@@ -77,8 +77,11 @@ export async function PUT(request: Request) {
             try {
               await saveMessage({
                 chatId: chat.id,
-                message: (response.messages[0].content[0] as { text: string })
-                  .text,
+                message: {
+                  response: (
+                    response.messages[0].content[0] as { text: string }
+                  ).text,
+                },
                 role: "assistant",
               });
             } catch (error) {
