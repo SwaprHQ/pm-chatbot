@@ -10,15 +10,12 @@ import { groq } from "@ai-sdk/groq";
 import { isAddress } from "viem";
 import { getMarket } from "../../../queries/omen/markets";
 
-// criar endpoint que recebe  market id e retorna uma resposta na stream
-// se for um chat novo, cria o chat na bd com user 0x0
-
 const getCurrentDateTimeUTC = () => {
   const now = new Date();
   return now.toISOString();
 };
 
-const regularPrompt = `You are a friendly assistant which assists on prediciton the future! Omit all information related to the Omen prediction market. Today is ${getCurrentDateTimeUTC()}, so take into account the time left for the end of the user question. End the message with a prediction and confidence level.`;
+const regularPrompt = `You are a friendly assistant which assists on prediciton the future! Omit all information related to the Omen prediction market and exact date and time. Only talk about relative time. Today is ${getCurrentDateTimeUTC()}, so take into account the time left for the end of the user question. End the message with a prediction and confidence level.`;
 
 type Content = { response: string; news: { url: string; title: string }[] };
 
@@ -70,10 +67,10 @@ export async function POST(request: Request) {
   ) {
     return new Response("No market found", { status: 404 });
   }
-  const { title, id } = market.fixedProductMarketMaker;
+  const { title } = market.fixedProductMarketMaker;
 
-  const marketInsightsResponse = await fetch(
-    `https://labs-api.ai.gnosisdev.com/market-insights?market_id=${id}`,
+  const questionInsightsResponse = await fetch(
+    `https://labs-api.ai.gnosisdev.com/question-insights?question=${title}`,
     {
       method: "GET",
       headers: {
@@ -82,12 +79,12 @@ export async function POST(request: Request) {
     }
   );
 
-  if (!marketInsightsResponse.ok) {
+  if (!questionInsightsResponse.ok) {
     return new Response("Failed to fetch market insights", {
-      status: marketInsightsResponse.status,
+      status: questionInsightsResponse.status,
     });
   }
-  const marketInsights = await marketInsightsResponse.json();
+  const questionInsights = await questionInsightsResponse.json();
 
   const saveChatResult = await saveChat({
     userId: "f161402a-c579-4225-9c82-e0e7cf0ea8d7",
@@ -102,9 +99,9 @@ export async function POST(request: Request) {
   const yesPercentage = Math.round(Number(yesOdd) * 100);
   const noPercentage = Math.round(Number(noOdd) * 100);
 
-  const systemPrompt = marketInsights?.summary
+  const systemPrompt = questionInsights?.summary
     ? `${regularPrompt}\n\n${`Take into account the current odds on the Omen prediction market. The market is showing a ${yesPercentage}% for the Yes outcome and ${noPercentage}% for the No outcome.`}\n\n${
-        marketInsights.summary
+        questionInsights.summary
       }`
     : regularPrompt;
 
@@ -116,11 +113,11 @@ export async function POST(request: Request) {
 
   return createDataStreamResponse({
     execute: (dataStream) => {
-      if (marketInsights.results.length > 0)
-        dataStream.writeMessageAnnotation({ news: marketInsights.results });
+      if (questionInsights.results.length > 0)
+        dataStream.writeMessageAnnotation({ news: questionInsights.results });
 
       const result = streamText({
-        model: groq("llama-3.3-70b-versatile"), //old: 	llama-3.2-90b-vision-preview
+        model: groq("llama-3.3-70b-versatile"),
         system: systemPrompt,
         messages: [{ role: "user", content: title }],
         onFinish: async ({ response }) => {
@@ -131,7 +128,7 @@ export async function POST(request: Request) {
                 response: (response.messages[0].content[0] as { text: string })
                   .text,
                 news:
-                  (marketInsights?.results as {
+                  (questionInsights?.results as {
                     url: string;
                     title: string;
                   }[]) || undefined,

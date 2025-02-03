@@ -39,7 +39,6 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
   };
 
   if (status === "unauthenticated") return "Please sign in to chat";
-  console.log(messages);
 
   return (
     <div className="flex flex-col h-screen px-4 pt-20 pb-8">
