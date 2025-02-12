@@ -15,7 +15,18 @@ const getCurrentDateTimeUTC = () => {
   return now.toISOString();
 };
 
-const regularPrompt = `You are a friendly assistant which assists on prediciton the future! Omit all information related to the Omen prediction market and exact date and time. Only talk about relative time. Today is ${getCurrentDateTimeUTC()}, so take into account the time left for the end of the user question. End the message with a prediction and confidence level.`;
+const regularPrompt = `You are a friendly assistant which assists on predicting the future! 
+
+Omit all information related to the Omen prediction market and exact date and time, only talk about relative time.  
+
+Today is ${getCurrentDateTimeUTC()}, so take into account the time left to the end of the market question. 
+
+Give an answer in JSON with 3 fields: reasoning, outcome and confidence. 
+ - Resoning is a text field explaining the reasoning behind the chosen outcome. 
+ - Outcome is the market outcome corresponding to the prediciton you make. 
+ - Confidence is the confidence level in percentage. 
+
+Only answer in JSON. JSON should strictly start with { and end with }.`;
 
 type Content = { response: string; news: { url: string; title: string }[] };
 
@@ -100,9 +111,10 @@ export async function POST(request: Request) {
   const noPercentage = Math.round(Number(noOdd) * 100);
 
   const systemPrompt = questionInsights?.summary
-    ? `${regularPrompt}\n\n${`Take into account the current odds on the Omen prediction market. The market is showing a ${yesPercentage}% for the Yes outcome and ${noPercentage}% for the No outcome.`}\n\n${
-        questionInsights.summary
-      }`
+    ? `${regularPrompt}\n\n${`
+      Take into account the current odds on the Omen prediction market. 
+      The market is showing a ${yesPercentage}% for the Yes outcome and ${noPercentage}% for the No outcome.
+      `}\n\n${questionInsights.summary}`
     : regularPrompt;
 
   await saveMessage({
