@@ -105,17 +105,26 @@ export async function POST(request: Request) {
 
   const chat = saveChatResult[0];
   const [yesOdd, noOdd] = market.fixedProductMarketMaker
-    ?.outcomeTokenMarginalPrices as [string, string];
+    .outcomeTokenMarginalPrices
+    ? market.fixedProductMarketMaker?.outcomeTokenMarginalPrices
+    : (["", ""] as [string, string]);
 
   const yesPercentage = Math.round(Number(yesOdd) * 100);
   const noPercentage = Math.round(Number(noOdd) * 100);
 
-  const systemPrompt = questionInsights?.summary
-    ? `${regularPrompt}\n\n${`
+  const insightSummary = questionInsights.summary
+    ? questionInsights.summary
+    : "";
+
+  const marketSummary =
+    yesPercentage !== 0 || noPercentage !== 0
+      ? `
       Take into account the current odds on the Omen prediction market. 
       The market is showing a ${yesPercentage}% for the Yes outcome and ${noPercentage}% for the No outcome.
-      `}\n\n${questionInsights.summary}`
-    : regularPrompt;
+      `
+      : "";
+
+  const systemPrompt = `${regularPrompt}\n\n${marketSummary}\n\n${insightSummary}`;
 
   await saveMessage({
     chatId: chat.id,
