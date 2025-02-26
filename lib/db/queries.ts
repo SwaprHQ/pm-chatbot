@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import { chat, message, user, User } from "./schema";
+import { chat, message, prediction, user, User } from "./schema";
 import { asc, desc, eq } from "drizzle-orm";
 import postgres from "postgres";
 
@@ -87,7 +87,7 @@ export async function getChatByMarketAddress({
       .where(eq(chat.marketAddress, marketAddress));
     return selectedChat;
   } catch (error) {
-    console.error("Failed to get chat by id from database");
+    console.error("Failed to get chat by market address from database");
     throw error;
   }
 }
@@ -138,7 +138,47 @@ export async function getMessageById({ id }: { id: string }) {
       .where(eq(message.id, id));
     return selectedMessage;
   } catch (error) {
-    console.error("Failed to get chat by id from database");
+    console.error("Failed to get message by id from database");
+    throw error;
+  }
+}
+
+export async function savePrediction({
+  content,
+  marketAddress,
+}: {
+  content: string;
+  marketAddress: string;
+}) {
+  try {
+    return await db
+      .insert(prediction)
+      .values({
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        content,
+        marketAddress,
+      })
+      .returning();
+  } catch (error) {
+    console.error("Failed to save chat in database");
+    throw error;
+  }
+}
+
+export async function getPredictionByMarketAddress({
+  marketAddress,
+}: {
+  marketAddress: string;
+}) {
+  try {
+    const [selectedPrediction] = await db
+      .select()
+      .from(prediction)
+      .where(eq(prediction.marketAddress, marketAddress));
+    return selectedPrediction;
+  } catch (error) {
+    console.error("Failed to get prediction by market address from database");
     throw error;
   }
 }
