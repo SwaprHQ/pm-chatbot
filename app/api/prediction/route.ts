@@ -24,9 +24,13 @@ export async function GET(request: Request) {
     marketAddress: address,
   });
 
+  if (!prediction) {
+    return NextResponse.json(null);
+  }
+
   return NextResponse.json({
     message: {
-      response: prediction.content,
+      response: JSON.stringify(prediction.content),
     },
     role: "assistant",
   });
@@ -48,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   if (!market.fixedProductMarketMaker?.title) {
-    return new Response("Market title not found", { status: 404 });
+    return new Response("Market title not found", { status: 400 });
   }
 
   const systemPrompt = await generateSystemPrompt({

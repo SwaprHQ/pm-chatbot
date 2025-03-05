@@ -18,7 +18,7 @@ export async function getUser(walletAddress: string): Promise<Array<User>> {
   }
 }
 
-export async function createUser(walletAddress: string) {
+export async function createUser(walletAddress: string): Promise<Array<User>> {
   try {
     return await db.insert(user).values({ walletAddress }).returning();
   } catch (error) {

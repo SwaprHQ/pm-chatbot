@@ -47,7 +47,9 @@ export const generateSystemPrompt = async ({
     );
 
     if (!questionInsightsResponse.ok) {
-      throw new Error("Failed to fetch market insights");
+      throw new Error(
+        "Failed to fetch market insights for question " + question
+      );
     }
     const questionInsights = await questionInsightsResponse.json();
 

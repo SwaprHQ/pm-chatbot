@@ -6,7 +6,6 @@ import {
   saveChat,
   saveMessage,
 } from "../../../lib/db/queries";
-import { auth } from "../../auth";
 import {
   createDataStreamResponse,
   generateText,
@@ -17,15 +16,21 @@ import { groq } from "@ai-sdk/groq";
 import { Chat } from "../../../lib/db/schema";
 import { generateSystemPrompt, jsonPrompt } from "../util";
 import { isAddress } from "viem";
+import { getIronSession } from "iron-session";
+import { SessionData, sessionOptions } from "@/lib/session";
+import { cookies } from "next/headers";
 
 type MessageContent = Message & { content: { response: string; news: [] } };
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  const session = await auth();
+  const session = await getIronSession<SessionData>(
+    await cookies(),
+    sessionOptions
+  );
 
-  if (!session || !session.user || !session.user.id) {
+  if (!session || !session.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -39,7 +44,7 @@ export async function GET(request: Request) {
     return new Response("No chat found", { status: 404 });
   }
 
-  if (chat.userId !== session.user.id) {
+  if (chat.userId !== session.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -51,7 +56,7 @@ export async function GET(request: Request) {
     ...chat,
     messages: messages.map(({ content, ...rest }) => ({
       ...rest,
-      content: content.response,
+      content: JSON.stringify(content.response),
       annotations: content.news ? [{ news: content.news }] : undefined,
     })),
   });
@@ -60,9 +65,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { message, marketId }: { message: string; marketId: string } =
     await request.json();
-  const session = await auth();
+  const session = await getIronSession<SessionData>(
+    await cookies(),
+    sessionOptions
+  );
 
-  if (!session || !session.user || !session.user.id) {
+  if (!session || !session.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -70,7 +78,7 @@ export async function POST(request: Request) {
     message.length > 40 ? message.slice(0, 40).concat("...") : message;
 
   const [chat] = await saveChat({
-    userId: session.user.id,
+    userId: session.userId,
     title,
     marketAddress: marketId,
   });
@@ -82,8 +90,8 @@ export async function POST(request: Request) {
   });
 
   try {
-    if (marketId) createMarketChat(message, chat, marketId);
-    else verifyAndCreateChat(message, chat);
+    if (marketId) createChat(message, chat, marketId);
+    else verifyQuestionAndCreateChat(message, chat);
   } catch (error) {
     let message;
     if (error instanceof Error) message = error.message;
@@ -95,19 +103,15 @@ export async function POST(request: Request) {
   return NextResponse.json({ chatId: chat.id });
 }
 
-async function createMarketChat(
-  message: string,
-  chat: Chat,
-  marketAddress: string
-) {
-  const preditcion = await getPredictionByMarketAddress({ marketAddress });
+async function createChat(message: string, chat: Chat, marketAddress: string) {
+  const prediction = await getPredictionByMarketAddress({ marketAddress });
 
-  if (!preditcion) return createChat(message, chat);
+  if (!prediction) return generateAssistantAnswer(message, chat);
 
   await saveMessage({
     chatId: chat.id,
     message: {
-      response: preditcion.content as string,
+      response: prediction.content as string,
     },
     role: "assistant",
   });
@@ -119,7 +123,7 @@ type QuestionValidity = {
   question: string;
 };
 
-async function verifyAndCreateChat(message: string, chat: Chat) {
+async function verifyQuestionAndCreateChat(message: string, chat: Chat) {
   const invalidQuestionResponse = await fetch(
     `https://labs-api.ai.gnosisdev.com/question-invalid?question=${message}`,
     {
@@ -137,10 +141,10 @@ async function verifyAndCreateChat(message: string, chat: Chat) {
     throw new Error("Invalid question");
   }
 
-  return createChat(message, chat);
+  return generateAssistantAnswer(message, chat);
 }
 
-async function createChat(message: string, chat: Chat) {
+async function generateAssistantAnswer(message: string, chat: Chat) {
   const { text } = await generateText({
     model: groq("llama-3.3-70b-versatile"),
     messages: [{ role: "user", content: message }],
@@ -168,9 +172,12 @@ export async function PUT(request: Request) {
   }: { messages: Message[]; id: string; marketId: string } = req;
   const userMessages = messages.filter((message) => message.role === "user");
   const lastUserMessage = userMessages.at(-1);
-  const session = await auth();
+  const session = await getIronSession<SessionData>(
+    await cookies(),
+    sessionOptions
+  );
 
-  if (!session || !session.user || !session.user.id) {
+  if (!session || !session.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -180,7 +187,7 @@ export async function PUT(request: Request) {
     return new Response("Chat not found", { status: 404 });
   }
 
-  if (chat.userId !== session.user.id) {
+  if (chat.userId !== session.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -212,20 +219,17 @@ export async function PUT(request: Request) {
         messages,
         system: systemPrompt,
         onFinish: async ({ response }) => {
-          if (session.user?.id) {
-            try {
-              await saveMessage({
-                chatId: chat.id,
-                message: {
-                  response: (
-                    response.messages[0].content[0] as { text: string }
-                  ).text,
-                },
-                role: "assistant",
-              });
-            } catch (error) {
-              console.error("Failed to save chat:", error);
-            }
+          try {
+            await saveMessage({
+              chatId: chat.id,
+              message: {
+                response: (response.messages[0].content[0] as { text: string })
+                  .text,
+              },
+              role: "assistant",
+            });
+          } catch (error) {
+            console.error("Failed to save chat:", error);
           }
         },
       });
