@@ -9,6 +9,7 @@ export async function GET() {
     await cookies(),
     sessionOptions
   );
+
   const nonce = generateNonce();
   session.nonce = nonce;
   await session.save();

@@ -1,13 +1,10 @@
-import {
-  getPredictionByMarketAddress,
-  savePrediction,
-} from "../../../lib/db/queries";
+import { getPredictionByMarketAddress, savePrediction } from "@/lib/db/queries";
 import { generateText } from "ai";
-import { groq } from "@ai-sdk/groq";
 import { isAddress } from "viem";
-import { getMarket } from "../../../queries/omen/markets";
+import { getMarket } from "@/queries/omen/markets";
 import { NextResponse } from "next/server";
-import { generateSystemPrompt, jsonPrompt } from "../util";
+import { generateSystemPrompt, jsonPrompt } from "../prompt";
+import { groqModel } from "@/lib/ai/groq";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -62,7 +59,7 @@ export async function POST(request: Request) {
   });
 
   const { text } = await generateText({
-    model: groq("llama-3.3-70b-versatile"),
+    model: groqModel,
     system: systemPrompt,
     messages: [{ role: "user", content: market.fixedProductMarketMaker.title }],
   });

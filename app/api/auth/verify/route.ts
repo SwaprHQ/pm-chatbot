@@ -3,8 +3,8 @@ import { getIronSession } from "iron-session";
 import { SiweMessage } from "siwe";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { cookies } from "next/headers";
-import { createUser, getUser } from "../../../../lib/db/queries";
-import { User } from "../../../../lib/db/schema";
+import { createUser, getUser } from "@/lib/db/queries";
+import { User } from "@/lib/db/schema";
 
 export async function POST(req: NextRequest) {
   const session = await getIronSession<SessionData>(
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
           { status: 404 }
         );
     }
-    console.log(user);
+
     session.userId = user.id;
     await session.save();
 

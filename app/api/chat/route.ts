@@ -1,66 +1,24 @@
 import { NextResponse } from "next/server";
 import {
   getChatById,
-  getMessagesByChatId,
   getPredictionByMarketAddress,
   saveChat,
   saveMessage,
-} from "../../../lib/db/queries";
+  savePrediction,
+} from "@/lib/db/queries";
 import {
   createDataStreamResponse,
   generateText,
   Message,
   streamText,
 } from "ai";
-import { groq } from "@ai-sdk/groq";
-import { Chat } from "../../../lib/db/schema";
-import { generateSystemPrompt, jsonPrompt } from "../util";
+import { Chat } from "@/lib/db/schema";
+import { generateSystemPrompt, jsonPrompt } from "../prompt";
 import { isAddress } from "viem";
 import { getIronSession } from "iron-session";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { cookies } from "next/headers";
-
-type MessageContent = Message & { content: { response: string; news: [] } };
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const session = await getIronSession<SessionData>(
-    await cookies(),
-    sessionOptions
-  );
-
-  if (!session || !session.userId) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  if (!id) {
-    return new Response("No id provided", { status: 400 });
-  }
-
-  const chat = await getChatById({ id });
-
-  if (!chat) {
-    return new Response("No chat found", { status: 404 });
-  }
-
-  if (chat.userId !== session.userId) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const messages = (await getMessagesByChatId({
-    id: chat.id,
-  })) as MessageContent[];
-
-  return NextResponse.json({
-    ...chat,
-    messages: messages.map(({ content, ...rest }) => ({
-      ...rest,
-      content: JSON.stringify(content.response),
-      annotations: content.news ? [{ news: content.news }] : undefined,
-    })),
-  });
-}
+import { groqModel } from "@/lib/ai/groq";
 
 export async function POST(request: Request) {
   const { message, marketId }: { message: string; marketId: string } =
@@ -90,8 +48,8 @@ export async function POST(request: Request) {
   });
 
   try {
-    if (marketId) createChat(message, chat, marketId);
-    else verifyQuestionAndCreateChat(message, chat);
+    if (marketId) savePredictionAnswer(message, chat, marketId);
+    else verifyQuestionAndSaveAnswer(message, chat);
   } catch (error) {
     let message;
     if (error instanceof Error) message = error.message;
@@ -103,10 +61,25 @@ export async function POST(request: Request) {
   return NextResponse.json({ chatId: chat.id });
 }
 
-async function createChat(message: string, chat: Chat, marketAddress: string) {
+async function savePredictionAnswer(
+  message: string,
+  chat: Chat,
+  marketAddress: string
+) {
   const prediction = await getPredictionByMarketAddress({ marketAddress });
 
-  if (!prediction) return generateAssistantAnswer(message, chat);
+  if (!prediction) {
+    const predicitonText = await generatePrediction(
+      message,
+      chat,
+      marketAddress
+    );
+    await savePrediction({
+      content: predicitonText,
+      marketAddress: marketAddress,
+    });
+    return;
+  }
 
   await saveMessage({
     chatId: chat.id,
@@ -123,7 +96,7 @@ type QuestionValidity = {
   question: string;
 };
 
-async function verifyQuestionAndCreateChat(message: string, chat: Chat) {
+async function verifyQuestionAndSaveAnswer(message: string, chat: Chat) {
   const invalidQuestionResponse = await fetch(
     `https://labs-api.ai.gnosisdev.com/question-invalid?question=${message}`,
     {
@@ -137,19 +110,21 @@ async function verifyQuestionAndCreateChat(message: string, chat: Chat) {
   const { invalid } =
     (await invalidQuestionResponse.json()) as QuestionValidity;
 
-  if (invalid) {
-    throw new Error("Invalid question");
-  }
+  if (invalid) throw new Error("Invalid question");
 
-  return generateAssistantAnswer(message, chat);
+  return generatePrediction(message, chat);
 }
 
-async function generateAssistantAnswer(message: string, chat: Chat) {
+async function generatePrediction(
+  message: string,
+  chat: Chat,
+  marketAddress?: string
+) {
   const { text } = await generateText({
-    model: groq("llama-3.3-70b-versatile"),
+    model: groqModel,
     messages: [{ role: "user", content: message }],
     system: await generateSystemPrompt({
-      marketAddress: null,
+      marketAddress,
       message: message,
       systemPrompt: jsonPrompt,
     }),
@@ -162,6 +137,8 @@ async function generateAssistantAnswer(message: string, chat: Chat) {
     },
     role: "assistant",
   });
+
+  return text;
 }
 
 export async function PUT(request: Request) {
@@ -192,7 +169,7 @@ export async function PUT(request: Request) {
   }
 
   if (!lastUserMessage) {
-    return new Response("User message not found", { status: 404 });
+    return new Response("User message not found", { status: 400 });
   }
 
   const address =
@@ -215,7 +192,7 @@ export async function PUT(request: Request) {
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        model: groq("llama-3.2-90b-vision-preview"),
+        model: groqModel,
         messages,
         system: systemPrompt,
         onFinish: async ({ response }) => {

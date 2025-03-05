@@ -25,7 +25,7 @@ export const generateSystemPrompt = async ({
   systemPrompt = regularPrompt,
   message,
 }: {
-  marketAddress: string | null;
+  marketAddress?: string | null;
   systemPrompt?: string;
   message?: string;
 }) => {
