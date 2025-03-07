@@ -51,12 +51,17 @@ export async function POST(request: Request) {
   if (!market.fixedProductMarketMaker?.title) {
     return new Response("Market title not found", { status: 400 });
   }
-
-  const systemPrompt = await generateSystemPrompt({
-    marketAddress: address,
-    message: market.fixedProductMarketMaker.title,
-    systemPrompt: jsonPrompt,
-  });
+  let systemPrompt = "";
+  try {
+    systemPrompt = await generateSystemPrompt({
+      marketAddress: address,
+      message: market.fixedProductMarketMaker.title,
+      systemPrompt: jsonPrompt,
+    });
+  } catch (error) {
+    console.error("Failed to generate system prompt:", error);
+    return new Response("Failed to generate answer", { status: 500 });
+  }
 
   const { text } = await generateText({
     model: groqModel,

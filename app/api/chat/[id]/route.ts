@@ -11,7 +11,8 @@ import { createDataStreamResponse, Message, streamText } from "ai";
 import { Chat } from "@/lib/db/schema";
 import { generateSystemPrompt } from "../../prompt";
 import { isAddress } from "viem";
-import { groqModel } from "@/lib/ai/groq";
+import { groq } from "@ai-sdk/groq";
+import { model } from "../../../../lib/ai/groq";
 
 type MessageContent = Message & { content: { response: string; news: [] } };
 
@@ -51,7 +52,7 @@ export async function GET(
     ...chat,
     messages: messages.map(({ content, ...rest }) => ({
       ...rest,
-      content: JSON.stringify(content.response),
+      content: content.response,
       annotations: content.news ? [{ news: content.news }] : undefined,
     })),
   });
@@ -70,6 +71,11 @@ export async function PUT(
     await cookies(),
     sessionOptions
   );
+
+  const sanitizedMessages = messages.map((msg) => ({
+    ...msg,
+    content: JSON.stringify(msg.content),
+  }));
 
   if (!session || !session.userId) {
     return new Response("Unauthorized", { status: 401 });
@@ -94,9 +100,14 @@ export async function PUT(
       ? chat.marketAddress.toLowerCase()
       : null;
 
-  const systemPrompt = await generateSystemPrompt({
-    marketAddress: address,
-  });
+  let systemPrompt = "";
+  try {
+    systemPrompt = await generateSystemPrompt({
+      marketAddress: address,
+    });
+  } catch (error) {
+    return new Response("Failed to generate answer", { status: 500 });
+  }
 
   if (userMessages.length > 1) {
     await saveMessage({
@@ -105,14 +116,16 @@ export async function PUT(
       role: "user",
     });
   }
+  console.log("hello 1");
 
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        model: groqModel,
-        messages,
+        model: groq(model),
+        messages: sanitizedMessages,
         system: systemPrompt,
         onFinish: async ({ response }) => {
+          console.log(response);
           try {
             await saveMessage({
               chatId: chat.id,
@@ -127,6 +140,8 @@ export async function PUT(
           }
         },
       });
+
+      console.log(result);
 
       result.mergeIntoDataStream(dataStream);
     },
