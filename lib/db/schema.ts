@@ -38,3 +38,13 @@ export const message = pgTable("Message", {
 });
 
 export type Message = InferSelectModel<typeof message>;
+
+export const prediction = pgTable("Prediction", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull(),
+  content: json("content").notNull(),
+  marketAddress: varchar("marketAddress").notNull(),
+});
+
+export type Prediction = InferSelectModel<typeof prediction>;
