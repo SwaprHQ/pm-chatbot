@@ -10,5 +10,6 @@ export const sessionOptions = {
   cookieName: "presagio",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
   },
 };

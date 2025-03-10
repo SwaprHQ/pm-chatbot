@@ -106,7 +106,8 @@ export async function PUT(
       marketAddress: address,
     });
   } catch (error) {
-    return new Response("Failed to generate answer", { status: 500 });
+    console.error("Failed generating system prompt:", error);
+    return new Response("Failed generating answer", { status: 500 });
   }
 
   if (userMessages.length > 1) {
@@ -116,7 +117,6 @@ export async function PUT(
       role: "user",
     });
   }
-  console.log("hello 1");
 
   return createDataStreamResponse({
     execute: (dataStream) => {

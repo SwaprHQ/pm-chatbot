@@ -91,7 +91,7 @@ async function savePredictionAnswer(
 }
 
 export async function POST(request: Request) {
-  const { message, marketId }: { message: string; marketId: string } =
+  const { message, marketId }: { message: string; marketId?: string } =
     await request.json();
   const session = await getIronSession<SessionData>(
     await cookies(),
@@ -118,8 +118,8 @@ export async function POST(request: Request) {
   });
 
   try {
-    if (marketId) savePredictionAnswer(message, chat, marketId);
-    else verifyQuestionAndSaveAnswer(message, chat);
+    if (marketId) await savePredictionAnswer(message, chat, marketId);
+    else await verifyQuestionAndSaveAnswer(message, chat);
   } catch (error) {
     let message;
     if (error instanceof Error) message = error.message;
