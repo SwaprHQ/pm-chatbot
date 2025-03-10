@@ -11,8 +11,7 @@ import { createDataStreamResponse, Message, streamText } from "ai";
 import { Chat } from "@/lib/db/schema";
 import { generateSystemPrompt } from "../../prompt";
 import { isAddress } from "viem";
-import { groq } from "@ai-sdk/groq";
-import { model } from "../../../../lib/ai/groq";
+import { groqModel } from "@/lib/ai/groq";
 
 type MessageContent = Message & { content: { response: string; news: [] } };
 
@@ -106,7 +105,8 @@ export async function PUT(
       marketAddress: address,
     });
   } catch (error) {
-    return new Response("Failed to generate answer", { status: 500 });
+    console.error("Failed generating system prompt:", error);
+    return new Response("Failed generating answer", { status: 500 });
   }
 
   if (userMessages.length > 1) {
@@ -116,16 +116,14 @@ export async function PUT(
       role: "user",
     });
   }
-  console.log("hello 1");
 
   return createDataStreamResponse({
     execute: (dataStream) => {
       const result = streamText({
-        model: groq(model),
+        model: groqModel,
         messages: sanitizedMessages,
         system: systemPrompt,
         onFinish: async ({ response }) => {
-          console.log(response);
           try {
             await saveMessage({
               chatId: chat.id,
