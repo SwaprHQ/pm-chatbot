@@ -1,7 +1,6 @@
 "use client";
 
 import { Message, useChat } from "ai/react";
-import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import MarkdownRenderer from "./markdown-renderer";
 import Link from "next/link";
@@ -32,13 +31,9 @@ export const Chat = ({ id, initialMessages }: ChatProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { status } = useSession();
-
   const submitForm = () => {
     handleSubmit();
   };
-
-  if (status === "unauthenticated") return "Please sign in to chat";
 
   return (
     <div className="flex flex-col h-screen px-4 pt-20 pb-8">

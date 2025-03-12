@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
 
 export const NewChat = () => {
-  const { status } = useSession();
   const [text, setText] = useState("");
   const router = useRouter();
 
@@ -29,8 +27,6 @@ export const NewChat = () => {
       // Handle error
     }
   };
-
-  if (status === "unauthenticated") return "Please sign in to chat";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
