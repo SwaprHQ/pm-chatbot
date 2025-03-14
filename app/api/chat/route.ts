@@ -19,7 +19,7 @@ type QuestionValidity = {
   question: string;
 };
 
-async function verifyQuestionAndSaveAnswer(message: string, chat: Chat) {
+async function verifyQuestionAndSaveAnswer(message: string, userId: string) {
   const invalidQuestionResponse = await fetch(
     `https://labs-api.ai.gnosisdev.com/question-invalid?question=${message}`,
     {
@@ -35,7 +35,11 @@ async function verifyQuestionAndSaveAnswer(message: string, chat: Chat) {
 
   if (invalid) throw new Error("Invalid question");
 
+  const chat = await createChatAndSaveUserMessage(message, userId);
+
   await generateAndSavePrediction(message, chat);
+
+  return chat;
 }
 
 async function generateAndSavePrediction(
@@ -71,14 +75,20 @@ async function generateAndSavePrediction(
 
 async function savePredictionAnswer(
   message: string,
-  chat: Chat,
+  userId: string,
   marketAddress: string
 ) {
   const prediction = await getPredictionByMarketAddress({ marketAddress });
 
+  const chat = await createChatAndSaveUserMessage(
+    message,
+    userId,
+    marketAddress
+  );
+
   if (!prediction) {
     await generateAndSavePrediction(message, chat, marketAddress);
-    return;
+    return chat;
   }
 
   await saveMessage({
@@ -88,7 +98,32 @@ async function savePredictionAnswer(
     },
     role: "assistant",
   });
+
+  return chat;
 }
+
+const createChatAndSaveUserMessage = async (
+  message: string,
+  userId: string,
+  marketAddress?: string
+) => {
+  const title =
+    message.length > 40 ? message.slice(0, 40).concat("...") : message;
+
+  const [chat] = await saveChat({
+    userId,
+    title,
+    marketAddress,
+  });
+
+  await saveMessage({
+    chatId: chat.id,
+    message: { response: message },
+    role: "user",
+  });
+
+  return chat;
+};
 
 export async function POST(request: Request) {
   const { message, marketId }: { message: string; marketId?: string } =
@@ -102,24 +137,13 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const title =
-    message.length > 40 ? message.slice(0, 40).concat("...") : message;
-
-  const [chat] = await saveChat({
-    userId: session.userId,
-    title,
-    marketAddress: marketId,
-  });
-
-  await saveMessage({
-    chatId: chat.id,
-    message: { response: message },
-    role: "user",
-  });
-
   try {
-    if (marketId) await savePredictionAnswer(message, chat, marketId);
-    else await verifyQuestionAndSaveAnswer(message, chat);
+    let chat: Chat;
+    if (marketId)
+      chat = await savePredictionAnswer(message, session.userId, marketId);
+    else chat = await verifyQuestionAndSaveAnswer(message, session.userId);
+
+    return NextResponse.json({ chatId: chat.id });
   } catch (error) {
     let message;
     if (error instanceof Error) message = error.message;
@@ -127,6 +151,4 @@ export async function POST(request: Request) {
 
     return new Response(message, { status: 400 });
   }
-
-  return NextResponse.json({ chatId: chat.id });
 }
