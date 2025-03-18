@@ -17,7 +17,7 @@ export type User = InferSelectModel<typeof user>;
 
 export const chat = pgTable("Chat", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
   title: text("title").notNull(),
   userId: uuid("userId")
     .notNull()
@@ -34,15 +34,15 @@ export const message = pgTable("Message", {
     .references(() => chat.id),
   role: varchar("role").notNull(),
   content: json("content").notNull(),
-  createdAt: timestamp("createdAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
 export type Message = InferSelectModel<typeof message>;
 
 export const prediction = pgTable("Prediction", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  updatedAt: timestamp("updatedAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   content: json("content").notNull(),
   marketAddress: varchar("marketAddress").notNull(),
 });
