@@ -139,8 +139,6 @@ export async function PUT(
         },
       });
 
-      console.log(result);
-
       result.mergeIntoDataStream(dataStream);
     },
   });
