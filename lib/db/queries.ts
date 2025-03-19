@@ -40,7 +40,6 @@ export async function saveChat({
     return await db
       .insert(chat)
       .values({
-        createdAt: new Date(),
         userId,
         title,
         marketAddress,
@@ -105,7 +104,6 @@ export async function saveMessage({
     return await db
       .insert(message)
       .values({
-        createdAt: new Date(),
         content: JSON.stringify(content),
         role,
         chatId,
@@ -154,8 +152,6 @@ export async function savePrediction({
     return await db
       .insert(prediction)
       .values({
-        createdAt: new Date(),
-        updatedAt: new Date(),
         content,
         marketAddress,
       })
