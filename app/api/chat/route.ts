@@ -134,7 +134,7 @@ export async function POST(request: Request) {
   );
 
   if (!session || !session.userId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   try {
@@ -149,6 +149,6 @@ export async function POST(request: Request) {
     if (error instanceof Error) message = error.message;
     else message = String(error);
 
-    return new Response(message, { status: 400 });
+    return NextResponse.json(message, { status: 400 });
   }
 }

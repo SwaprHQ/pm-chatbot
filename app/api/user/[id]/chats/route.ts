@@ -15,7 +15,7 @@ export async function GET(
   );
 
   if (!session || !session.userId || session.userId !== id) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   try {
@@ -28,6 +28,6 @@ export async function GET(
     return NextResponse.json(chatList);
   } catch (error) {
     console.error("Failed to fetch chats:", error);
-    return new Response("Server error", { status: 500 });
+    return NextResponse.json("Server error", { status: 500 });
   }
 }

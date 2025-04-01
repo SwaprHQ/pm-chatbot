@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     marketId && isAddress(marketId) ? marketId.toLowerCase() : null;
 
   if (!address) {
-    return new Response("No address provided", { status: 400 });
+    return NextResponse.json("No address provided", { status: 400 });
   }
 
   const prediction = await getPredictionByMarketAddress({
@@ -39,17 +39,17 @@ export async function POST(request: Request) {
   const address = isAddress(marketId) ? marketId.toLowerCase() : null;
 
   if (!address) {
-    return new Response("No address provided", { status: 400 });
+    return NextResponse.json("No address provided", { status: 400 });
   }
 
   const market = await getMarket({ id: address });
 
   if (!market) {
-    return new Response("Market not found", { status: 404 });
+    return NextResponse.json("Market not found", { status: 404 });
   }
 
   if (!market.fixedProductMarketMaker?.title) {
-    return new Response("Market title not found", { status: 400 });
+    return NextResponse.json("Market title not found", { status: 400 });
   }
   let systemPrompt = "";
   try {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Failed to generate system prompt:", error);
-    return new Response("Failed to generate answer", { status: 500 });
+    return NextResponse.json("Failed to generate answer", { status: 500 });
   }
 
   const { text } = await generateText({
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   });
 
   if (!prediction) {
-    return new Response("Prediction not saved", { status: 500 });
+    return NextResponse.json("Prediction not saved", { status: 500 });
   }
 
   return NextResponse.json({

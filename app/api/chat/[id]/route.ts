@@ -26,21 +26,21 @@ export async function GET(
   );
 
   if (!session || !session.userId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   if (!id) {
-    return new Response("No id provided", { status: 400 });
+    return NextResponse.json("No id provided", { status: 400 });
   }
 
   const chat = await getChatById({ id });
 
   if (!chat) {
-    return new Response("No chat found", { status: 404 });
+    return NextResponse.json("No chat found", { status: 404 });
   }
 
   if (chat.userId !== session.userId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   const messages = (await getMessagesByChatId({
@@ -77,21 +77,21 @@ export async function PUT(
   }));
 
   if (!session || !session.userId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   const chat: Chat = await getChatById({ id });
 
   if (!chat) {
-    return new Response("Chat not found", { status: 404 });
+    return NextResponse.json("Chat not found", { status: 404 });
   }
 
   if (chat.userId !== session.userId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json("Unauthorized", { status: 401 });
   }
 
   if (!lastUserMessage) {
-    return new Response("User message not found", { status: 400 });
+    return NextResponse.json("User message not found", { status: 400 });
   }
 
   const address =
@@ -106,7 +106,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Failed generating system prompt:", error);
-    return new Response("Failed generating answer", { status: 500 });
+    return NextResponse.json("Failed generating answer", { status: 500 });
   }
 
   if (userMessages.length > 1) {
