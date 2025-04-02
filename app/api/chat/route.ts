@@ -136,6 +136,9 @@ export async function POST(request: Request) {
   if (!session || !session.userId) {
     return NextResponse.json("Unauthorized", { status: 401 });
   }
+  if (!message || message.trim() === "") {
+    return NextResponse.json("Invalid question", { status: 400 });
+  }
 
   try {
     let chat: Chat;
