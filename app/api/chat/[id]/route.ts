@@ -80,6 +80,10 @@ export async function PUT(
     return NextResponse.json("Unauthorized", { status: 401 });
   }
 
+  if (!lastUserMessage?.content) {
+    return NextResponse.json("Invalid message", { status: 400 });
+  }
+
   const chat: Chat = await getChatById({ id });
 
   if (!chat) {
