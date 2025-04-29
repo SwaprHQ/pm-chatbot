@@ -29,6 +29,13 @@
       "when": 1742302937329,
       "tag": "0003_bizarre_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1745920511870,
+      "tag": "0004_loud_rogue",
+      "breakpoints": true
     }
   ]
 }
