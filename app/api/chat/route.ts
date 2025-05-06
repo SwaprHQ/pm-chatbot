@@ -7,33 +7,26 @@ import {
 } from "@/lib/db/queries";
 import { generateText } from "ai";
 import { Chat } from "@/lib/db/schema";
-import { generateSystemPrompt, jsonPrompt } from "../prompt";
+import {
+  generateSystemPrompt,
+  jsonPrompt,
+  questionIsInvalidPrompt,
+} from "../prompt";
 import { getIronSession } from "iron-session";
 import { SessionData, sessionOptions } from "@/lib/session";
 import { cookies } from "next/headers";
 import { groqModel } from "@/lib/ai/groq";
 
-type QuestionValidity = {
-  created_at: string;
-  invalid: boolean;
-  question: string;
-};
-
 async function verifyQuestionAndSaveAnswer(message: string, userId: string) {
-  const invalidQuestionResponse = await fetch(
-    `https://labs-api.ai.gnosisdev.com/question-invalid?question=${message}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const { text } = await generateText({
+    model: groqModel,
+    messages: [{ role: "user", content: questionIsInvalidPrompt(message) }],
+  });
 
-  const { invalid } =
-    (await invalidQuestionResponse.json()) as QuestionValidity;
+  const isInvalid =
+    text.toLowerCase().split("decision:").at(1)?.includes("yes") || true;
 
-  if (invalid) throw new Error("Invalid question");
+  if (isInvalid) throw new Error("Invalid question");
 
   const chat = await createChatAndSaveUserMessage(message, userId);
 
